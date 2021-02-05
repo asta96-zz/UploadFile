@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest>
-  <control namespace="dksk" constructor="uploader2" version="0.0.14" display-name-key="uploader2" description-key="uploader2 description" control-type="standard" preview-image="img/preview.png">
+  <control namespace="dksk" constructor="uploader2" version="0.0.16" display-name-key="uploader2" description-key="uploader2 description" control-type="standard" preview-image="img/preview.png">
     <!-- property node identifies a specific, configurable piece of data that the control expects from CDS -->
-    <property name="sampleProperty" display-name-key="Property_Display_Key" description-key="Property_Desc_Key" of-type="SingleLine.Text" usage="bound" required="true" />
+    <property name="uploaderField" display-name-key="uploaderField" description-key="select this control to bring up a different look and feel of a file uploader UI" of-type="SingleLine.Text" usage="bound" required="true" />
     <!-- 
       Property node's of-type attribute can be of-type-group attribute. 
       Example:
@@ -18,18 +18,18 @@
       <code path="index.ts" order="1" />
       <css path="css/uploader2.css" order="1" />
       <resx path="strings/uploader2.1033.resx" version="1.0.0" />
-    </resources>
-    <!-- UNCOMMENT TO ENABLE THE SPECIFIED API
-    <feature-usage>
+    </resources> 
+    <feature-usage>   
+      <uses-feature name="Utility" required="true" />
+      <uses-feature name="WebAPI" required="true" />
+    </feature-usage>
+    <!-- UNCOMMENT TO ENABLE THE SPECIFIED API   
       <uses-feature name="Device.captureAudio" required="true" />
       <uses-feature name="Device.captureImage" required="true" />
       <uses-feature name="Device.captureVideo" required="true" />
       <uses-feature name="Device.getBarcodeValue" required="true" />
       <uses-feature name="Device.getCurrentPosition" required="true" />
-      <uses-feature name="Device.pickFile" required="true" />
-      <uses-feature name="Utility" required="true" />
-      <uses-feature name="WebAPI" required="true" />
-    </feature-usage>
+      <uses-feature name="Device.pickFile" required="true" />   
     -->
   </control>
 </manifest>

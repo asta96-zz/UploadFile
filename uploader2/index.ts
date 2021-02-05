@@ -1,7 +1,11 @@
 import { IInputs, IOutputs } from "./generated/ManifestTypes";
-
 class EntityReference {
-  constructor(public typeName: string, public id: string) {}
+  // id: string;
+  // typeName: string;
+  constructor(public typeName: string, public id: string) {
+    // this.id = id;
+    // this.typeName = typeName;
+  }
 }
 class AttachedFile implements ComponentFramework.FileObject {
   constructor(
@@ -20,6 +24,8 @@ interface FileNode {
 export class uploader2
   implements ComponentFramework.StandardControl<IInputs, IOutputs> {
   private Files: FileNode[] = [];
+  private entityReference: EntityReference;
+  private _context: ComponentFramework.Context<IInputs>;
   constructor() {}
 
   public init(
@@ -29,6 +35,11 @@ export class uploader2
     container: HTMLDivElement
   ) {
     this.Files = [];
+    this._context = context;
+    this.entityReference = new EntityReference(
+      (<any>context).page.entityTypeName,
+      (<any>context).page.entityId
+    );
     const UploadForm = this.CreateFormUploadDiv();
     container.appendChild(UploadForm);
   }
@@ -58,9 +69,7 @@ export class uploader2
       DragDiv,
       fileCatcher,
     ]);
-    DragDiv.addEventListener("dragover", this.FileDragHover);
-    DragDiv.addEventListener("dragleave", this.FileDragHover);
-    DragDiv.addEventListener("drop", this.handleBrowse);
+
     const UploadButton = document.createElement("button");
     UploadButton.innerText = "Upload";
     UploadButton.className = "buttons";
@@ -79,7 +88,9 @@ export class uploader2
     const rightDiv = this.createDiv("right-container", "right-container", [
       filesHolder,
     ]);
-
+    rightDiv.addEventListener("dragover", this.FileDragHover);
+    rightDiv.addEventListener("dragleave", this.FileDragHover);
+    rightDiv.addEventListener("drop", this.handleBrowse);
     const mainContainer = this.createDiv("main-container", "main-container", [
       leftDiv,
       rightDiv,
@@ -111,9 +122,9 @@ export class uploader2
 
   //
   private handleBrowse = (e: any): void => {
+    e.preventDefault();
     console.log("handleBrowse");
     console.log(e);
-    this.FileDragHover(e);
     var files = e.target.files || e.dataTransfer.files;
     if (files.length > 0) {
       this.addFiles(files);
@@ -145,6 +156,102 @@ export class uploader2
     debugger;
     console.log("handleUpload");
     console.log(e);
+    let files = this.Files;
+    const valid = files && files.length > 0;
+    if (!valid) {
+      alert("Please select a file!");
+      return;
+    } else {
+      for (let i = 0; i < files.length; i++) {
+        const file = files ? files[i].file : "";
+        if (file !== "") {
+          this.toBase64String(file, (file: File, text: string) => {
+            const type = file.type;
+            // this.renderToPlayer(text, type);
+            let notesEntity = new AttachedFile(
+              "",
+              file.name,
+              type,
+              text,
+              file.size
+            );
+            this.addAttachments(notesEntity);
+          });
+        }
+      }
+      debugger;
+      alert(`uploaded ${files.length} number of files as attachments`);
+      this.clearAttachments;
+    }
+  };
+  clearAttachments = (): void => {
+    const fileList = document.getElementById("catchedfileslist") as any;
+    if (fileList) {
+      while (fileList.hasChildNodes()) {
+        fileList.removeChild(fileList.firstChild);
+      }
+    }
+    this.Files = [];
+  };
+  addAttachments = (file: AttachedFile): void => {
+    debugger;
+    var notesEntity: any = {};
+    console.log(file);
+    var fileContent = file.fileContent;
+    fileContent = fileContent.substring(
+      fileContent.indexOf(",") + 1,
+      fileContent.length
+    );
+    notesEntity["documentbody"] = fileContent;
+    notesEntity["filename"] = file.fileName;
+    notesEntity["filesize"] = file.fileSize;
+    notesEntity["mimetype"] = file.mimeType;
+    notesEntity["subject"] = file.fileName;
+    notesEntity["notetext"] = "Attachments uploaded via PCF uploader";
+    notesEntity["objecttypecode"] = this.entityReference.typeName;
+    notesEntity[
+      `objectid_${this.entityReference.typeName}@odata.bind`
+    ] = `/${this.CollectionNameFromLogicalName(
+      this.entityReference.typeName
+    )}(${this.entityReference.id})`;
+    let thisRef = this;
+
+    // Invoke the Web API to creat the new record
+    this._context.webAPI.createRecord("annotation", notesEntity).then(
+      function (response: ComponentFramework.EntityReference) {
+        // Callback method for successful creation of new record
+        console.log(response);
+
+        // Get the ID of the new record created
+        notesEntity["annotationId"] = response.id;
+        notesEntity["fileContent"] = file.fileContent;
+        notesEntity["fileName"] = notesEntity["filename"];
+        //this.renderToPlayer(file.fileContent, file.mimeType);
+        console.log(`Uploaded !!${file.fileName}`);
+      },
+      function (errorResponse: any) {
+        // Error handling code here - record failed to be created
+        console.log(errorResponse);
+        alert("Unable to uploaded video!!");
+      }
+    );
+  };
+  CollectionNameFromLogicalName = (entityLogicalName: string): string => {
+    if (entityLogicalName[entityLogicalName.length - 1] != "s") {
+      return `${entityLogicalName}s`;
+    } else {
+      return `${entityLogicalName}ies`;
+    }
+  };
+  private toBase64String = (
+    file: File,
+    successFn: (file: File, body: string) => void
+  ) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => successFn(file, reader.result as string);
+    console.log(reader.result);
+    return reader.result;
   };
   private $id = (id: string): any => {
     return document.getElementById(id);
@@ -153,12 +260,13 @@ export class uploader2
   private handleReset = (e: any): void => {
     console.log("handleReset");
     console.log(e);
+    this.clearAttachments();
   };
 
   private FileDragHover = (e: any): void => {
     e.stopPropagation();
     e.preventDefault();
-    e.target.className = e.type == "dragover" ? "hover" : "";
+    // e.target.className = e.type == "dragover" ? "hover" : "";
     console.log("dragover", e);
   };
   public updateView(context: ComponentFramework.Context<IInputs>): void {

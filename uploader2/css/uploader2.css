@@ -74,8 +74,12 @@
 }
 
 .files {
-  background-color: red;
+  /* background-color: red; */
   display: block;
   height: 100%;
   width: auto;
+  font-weight: bold;
+  font-size: medium;
+  font-family: "Tahoma", Tahoma, Geneva, Verdana, sans-serif;
+  text-align: left;
 }
